@@ -199,7 +199,7 @@ class PurdueHousingBot:
         valid_reciever_emails = self.validate_emails()
         valid_tesseract_location = self.validate_tesseract_location()
         
-        if valid_sender_email and valid_password and valid_reciever_emails:
+        if valid_sender_email and valid_password and valid_reciever_emails and valid_tesseract_location:
             return True
         else:
             error_message = (
@@ -220,6 +220,7 @@ class PurdueHousingBot:
             self.isRunning.set(True)
             self.stop_btn.config(state="normal")
             self.start_btn.config(state="disabled")
+            self.browse_file_btn.config(state="disabled")
             self.message.set("Running.")
         
     def stop_program(self):
@@ -230,6 +231,7 @@ class PurdueHousingBot:
         self.isRunning.set(False)
         self.stop_btn.config(state="disabled")
         self.start_btn.config(state="normal")
+        self.browse_file_btn.config(state="normal")
         self.message.set("Not Running.")
     
     def run_program(self):
@@ -266,7 +268,10 @@ class PurdueHousingBot:
         except:
             messagebox.showerror(
                 title="Error", 
-                message="Failed to convert screen to text."
+                message=(
+                    "Failed to convert screen to text. "
+                    "Check tesseract location."
+                )
                 )
             self.stop_program()
             return
@@ -281,8 +286,14 @@ class PurdueHousingBot:
                     )
                 )
             self.message.set("Test email sent.")
-            self.window.after(5000, lambda: self.message.set("Not Running."))
+            self.message_label.config(foreground="#66ff00")
+            self.message_label.config(font="TkDefaultFont 14")
+            self.window.after(5000, self.reset_message)
 
+    def reset_message(self):
+        self.message.set("Not Running.")
+        self.message_label.config(foreground="black")
+        self.message_label.config(font="TkDefaultFont 10")
 
     def send_email(self, subject: str, body: str):
         msg = EmailMessage()
@@ -291,7 +302,11 @@ class PurdueHousingBot:
         msg['To'] = self.process_reciever_emails()
         msg.set_content(body)
         context = ssl.create_default_context()
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465, context) as server:
+        with smtplib.SMTP_SSL(
+            host='smtp.gmail.com', 
+            port=465, 
+            context=context
+            ) as server:
             try:
                 server.login(
                     self.sender_email.get(), 
@@ -301,7 +316,10 @@ class PurdueHousingBot:
             except:
                 messagebox.showerror(
                     title="Error", 
-                    message="Failed to send email."
+                    message=(
+                        "Failed to send email. "
+                        "Check emails and password."
+                        )
                     ) 
                 self.stop_program()
 
